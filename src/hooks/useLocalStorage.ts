@@ -15,6 +15,7 @@ export interface FormData {
   phoneNumber: string
   context: string
   availability: AvailabilityPeriod[]
+  negotiationStrategy: 'standard' | 'ragebait'
 }
 
 const STORAGE_KEY = 'craigslist-form-data'
@@ -24,7 +25,8 @@ export function useLocalStorage() {
     category: '',
     phoneNumber: '',
     context: '',
-    availability: []
+    availability: [],
+    negotiationStrategy: 'standard'
   })
 
   // Load data from localStorage on mount
@@ -74,7 +76,8 @@ export function useLocalStorage() {
         category: '',
         phoneNumber: '',
         context: '',
-        availability: []
+        availability: [],
+        negotiationStrategy: 'standard'
       })
     } catch (error) {
       console.error('Error clearing localStorage:', error)

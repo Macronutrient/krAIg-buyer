@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { VapiCall } from "@/components/VapiCall"
 import { AvailabilitySection } from "@/components/AvailabilitySection"
 import { useLocalStorage, AvailabilityPeriod } from "@/hooks/useLocalStorage"
-import { ExternalLink, MessageSquare, Copy, Check, Link, Phone } from "lucide-react"
+import { ExternalLink, MessageSquare, Copy, Check, Link, Phone, Zap } from "lucide-react"
 
 export default function Home() {
   const { formData, updateFormData, clearStorage } = useLocalStorage()
@@ -270,6 +271,7 @@ export default function Home() {
                   </p>
                 </div>
               )}
+
             </CardContent>
           </Card>
 
@@ -286,6 +288,8 @@ export default function Home() {
               sellerPhone={contactPhone}
               firstName={firstName}
               availability={formData.availability}
+              negotiationStrategy={formData.negotiationStrategy}
+              onNegotiationStrategyChange={(strategy) => updateFormData({ negotiationStrategy: strategy })}
               onCallStart={handleCallStart}
               onCallEnd={handleCallEnd}
               onMessage={handleMessage}

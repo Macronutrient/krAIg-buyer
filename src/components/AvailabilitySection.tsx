@@ -125,7 +125,7 @@ export function AvailabilitySection({ availability, onAvailabilityChange }: Avai
                   variant="ghost"
                   size="sm"
                   onClick={() => removePeriod(period.id)}
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                  className="text-gray-500 hover:text-gray-700 hover:bg-gray-50"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>

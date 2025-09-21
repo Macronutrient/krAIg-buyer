@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Phone, PhoneOff } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { Phone, PhoneOff, Zap } from 'lucide-react'
 import { AvailabilityPeriod } from '@/hooks/useLocalStorage'
 
 interface VapiCallProps {
@@ -11,12 +13,14 @@ interface VapiCallProps {
   sellerPhone: string
   firstName?: string
   availability?: AvailabilityPeriod[]
+  negotiationStrategy?: 'standard' | 'ragebait'
+  onNegotiationStrategyChange?: (strategy: 'standard' | 'ragebait') => void
   onCallStart?: () => void
   onCallEnd?: () => void
   onMessage?: (message: any) => void
 }
 
-export function VapiCall({ listingText, sellerPhone, firstName, availability, onCallStart, onCallEnd, onMessage }: VapiCallProps) {
+export function VapiCall({ listingText, sellerPhone, firstName, availability, negotiationStrategy, onNegotiationStrategyChange, onCallStart, onCallEnd, onMessage }: VapiCallProps) {
   const [isCallActive, setIsCallActive] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)
   const [callStatus, setCallStatus] = useState<string>('Ready to call')
@@ -39,7 +43,8 @@ export function VapiCall({ listingText, sellerPhone, firstName, availability, on
           phoneNumber: sellerPhone,
           listingDescription: listingText,
           firstName: firstName || '',
-          availability: availability || []
+          availability: availability || [],
+          negotiationStrategy: negotiationStrategy || 'standard'
         }),
       })
 
@@ -65,31 +70,29 @@ export function VapiCall({ listingText, sellerPhone, firstName, availability, on
   }
 
   const endCall = async () => {
-    if (!callId || !controlUrl) return
+    // Always end the call locally first
+    setIsCallActive(false)
+    setCallStatus('Call ended')
+    setCallId(null)
+    setControlUrl(null)
+    onCallEnd?.()
 
-    try {
-      const response = await fetch(controlUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'end-call'
-        }),
-      })
-
-      if (response.ok) {
-        setIsCallActive(false)
-        setCallStatus('Call ended')
-        setCallId(null)
-        setControlUrl(null)
-        onCallEnd?.()
-      } else {
-        setCallStatus('Failed to end call')
+    // Try to end the call remotely, but don't worry if it fails
+    if (controlUrl) {
+      try {
+        await fetch(controlUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'end-call'
+          }),
+        })
+      } catch (error) {
+        console.log('Remote end call failed (this is normal):', error)
+        // Don't show error to user since we already ended locally
       }
-    } catch (error) {
-      console.error('Failed to end call:', error)
-      setCallStatus('Failed to end call - Network error')
     }
   }
 
@@ -105,38 +108,69 @@ export function VapiCall({ listingText, sellerPhone, firstName, availability, on
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Call Controls */}
-        <div className="flex gap-2 justify-center">
-          {!isCallActive && !isConnecting ? (
-            <Button
-              onClick={startCall}
-              disabled={!listingText.trim() || !sellerPhone.trim()}
-              size="lg"
-              className="flex items-center gap-2"
+        {/* Negotiation Strategy and Call Controls in same row */}
+        <div className="flex gap-4 items-end">
+          {/* Negotiation Strategy Section */}
+          <div className="flex-1 space-y-2">
+            <Label htmlFor="strategy">
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4" />
+                Negotiation Strategy
+              </div>
+            </Label>
+            <Select
+              value={negotiationStrategy || 'standard'}
+              onValueChange={(value: 'standard' | 'ragebait') => 
+                onNegotiationStrategyChange?.(value)
+              }
             >
-              <Phone className="h-4 w-4" />
-              {sellerPhone ? `Call Seller ${sellerPhone}` : 'Call Seller'}
-            </Button>
-          ) : isConnecting ? (
-            <Button
-              disabled
-              size="lg"
-              className="flex items-center gap-2"
-            >
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              Calling...
-            </Button>
-          ) : (
-            <Button
-              onClick={endCall}
-              variant="destructive"
-              size="lg"
-              className="flex items-center gap-2"
-            >
-              <PhoneOff className="h-4 w-4" />
-              End Call
-            </Button>
-          )}
+              <SelectTrigger>
+                <SelectValue placeholder="Select negotiation strategy" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="standard">
+                  Standard Negotiation
+                </SelectItem>
+                <SelectItem value="ragebait">
+                  Ragebait Mode 🔥
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Call Controls */}
+          <div className="flex-shrink-0">
+            {!isCallActive && !isConnecting ? (
+              <Button
+                onClick={startCall}
+                disabled={!listingText.trim() || !sellerPhone.trim()}
+                size="lg"
+                className="flex items-center gap-2"
+              >
+                <Phone className="h-4 w-4" />
+                {sellerPhone ? `Call Seller ${sellerPhone}` : 'Call Seller'}
+              </Button>
+            ) : isConnecting ? (
+              <Button
+                disabled
+                size="lg"
+                className="flex items-center gap-2"
+              >
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Calling...
+              </Button>
+            ) : (
+              <Button
+                onClick={endCall}
+                variant="destructive"
+                size="lg"
+                className="flex items-center gap-2"
+              >
+                <PhoneOff className="h-4 w-4" />
+                End Call
+              </Button>
+            )}
+          </div>
         </div>
 
         {(!listingText.trim() || !sellerPhone.trim()) && !isConnecting && !isCallActive && (
