@@ -1,4 +1,4 @@
-# krAIg-buyer
+# krAIg Buyer
 
 > _A negotiation tool_
 
